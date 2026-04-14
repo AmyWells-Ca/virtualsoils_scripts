@@ -33,6 +33,9 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         [System.IO.Directory]::CreateDirectory($projectDir+'\3DGS')
         [System.IO.Directory]::CreateDirectory($projectDir+'\output')
 
+
+        Sleep(1)
+
             # "-importGroundControlPoints `"$PSScriptRoot\$ver\ControlPoints.csv`" `"$PSScriptRoot\$ver\ControlPointSettings.xml`"",
             # "-setReconstructionRegion `"$PSScriptRoot\$ver\reconstructionRegion.rsbox`"",
         
@@ -55,31 +58,26 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
             "-quit"
             )
         #>
-            
-        ## Settings for Lichtfeld Studio
-        $gaus = 8192 * 1000
+
+        ## Launch Lichtfeld Studio --> Settings are located in lfs_config.json
 
         $argsLichtfeldStudio = @(
             "-d `"$projectDir\Alignment`"",
             "-o `"$projectDir\3DGS`"",
-            "-r 2",
-            "-i 30000",
-            "--max-cap $gaus",
-            "--steps-scaler 4",
-            "--min-opacity=0.01",
-            "--enable-sparsity",
-            "--bilateral-grid",
-            "--enable-sparsity",
-            "--prune_ratio=0.5"
+            "--config=`"$PSScriptRoot\lfs_config.json`""
         )
 
         Write-Host $argsLichtfeldStudio
-        Sleep(5)
+        Sleep(1)
 
         # Runs Lichtfeld Studio with the previously defined settings
-#        Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" -ArgumentList $argsLichtfeldStudio -WorkingDirectory "C:\Users\amys2001\LichtFeld-Studio" -Wait
+        Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" -ArgumentList $argsLichtfeldStudio -WorkingDirectory "C:\Users\amys2001\LichtFeld-Studio" -Wait -WindowStyle Maximized
  #       Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" -ArgumentList $argsLichtfeldStudio -Wait
-        Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" -ArgumentList $argsLichtfeldStudio -Wait
+
+
+  #      Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" 
+
+        Sleep(1)
 
         Write-Host ""
         Write-Host "3DGS Completed!"
