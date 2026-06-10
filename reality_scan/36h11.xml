@@ -1,0 +1,7 @@
+<Configuration id="{8D21413B-0848-49A9-BF6E-8EBCCA356BC7}">
+  <entry key="minMarkerMeasurements" value="0x5"/>
+  <entry key="generateMarkersPaperSize" value="0"/>
+  <entry key="generateMarkersMarkersPerPage" value="0x4"/>
+  <entry key="generateMarkersCount" value="0x4"/>
+  <entry key="detectMarkersClass" value="{FBE54CA7-788B-4E0A-BA41-F3464E51A008}"/>
+</Configuration>

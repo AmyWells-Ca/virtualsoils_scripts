@@ -29,12 +29,10 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         Write-Host "Yay" -ForegroundColor Green
 
         # Creates new directories if needed for the alignment outputs, and the 3DGS outputs
-        # [System.IO.Directory]::CreateDirectory($projectDir+'\Alignment')
-        [System.IO.Directory]::CreateDirectory($projectDir+'\3DGS')
-        [System.IO.Directory]::CreateDirectory($projectDir+'\output')
-
-
-        Sleep(1)
+        [System.IO.Directory]::CreateDirectory($projectDir+'\alignment')    # Folder for colmap aligned photos
+        [System.IO.Directory]::CreateDirectory($projectDir+'\3DGS_High')    # Folder for high-quality (4m splat)
+        [System.IO.Directory]::CreateDirectory($projectDir+'\3DGS_Low')     # Folder for low-quality (512k splat)
+        [System.IO.Directory]::CreateDirectory($projectDir+'\output')       # Folder for processed .sog files
 
             # "-importGroundControlPoints `"$PSScriptRoot\$ver\ControlPoints.csv`" `"$PSScriptRoot\$ver\ControlPointSettings.xml`"",
             # "-setReconstructionRegion `"$PSScriptRoot\$ver\reconstructionRegion.rsbox`"",
@@ -43,37 +41,45 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         <#
         ## Settings for RealityScan
         $argsRealityScan = @(
-            "-addFolder $projectDir\Input\",
+            "-addFolder $projectDir\input\",
             "-setProjectCoordinateSystem Local:1",
-            "-detectMarkers `"$PSScriptRoot\$ver\36h11.xml`""
-            "-defineDistance `"$PSScriptRoot\$ver\Constraints.csv`"",
+            "-detectMarkers `"$PSScriptRoot\reality_scan\36h11.xml`""
+            "-defineDistance `"$PSScriptRoot\reality_scan\Constraints.csv`"",
             "-align",
             "-selectMaximalComponent",
             
             "-calculatePreviewModel",
             "-calculateVertexColors",
-            "-exportRegistration `"$projectDir\Alignment\$fieldName.txt`" `"$PSScriptRoot\$ver\Export_Colmap.xml`"",
-            "-exportSelectedModel $projectDir\HP_$fieldName.fbx `"$PSScriptRoot\$ver\Export_FBX.xml`"",
-            "-save `"$projectDir\RS_$fieldName.rsproj`"",
+            "-exportRegistration `"$projectDir\alignment\$fieldName.txt`" `"$PSScriptRoot\reality_scan\Export_Colmap.xml`"",
+            "-exportSelectedModel $projectDir\HP_$fieldName.fbx `"$PSScriptRoot\reality_scan\Export_FBX.xml`"",
+            "-save `"$projectDir\reality_scan\RS_$fieldName.rsproj`"",
             "-quit"
             )
         #>
 
-        ## Launch Lichtfeld Studio --> Settings are located in lfs_config.json
+        # Start-Process -FilePath "F:\UnrealEngine\RealityScan_2.0\RealityScan.exe" -ArgumentList $argsRealityScan -Wait
 
+        #
+        # 3DGS
+        #
+        
+        # Settings for the "high quality" models
         $argsLichtfeldStudio = @(
-            "-d `"$projectDir\Alignment`"",
-            "-o `"$projectDir\3DGS`"",
-            "--config=`"$PSScriptRoot\lfs_config.json`""
+            "-d `"$projectDir\alignment`"",
+            "-o `"$projectDir\3DGS_High`"",
+            "--config=`"$PSScriptRoot\lichtfeld_studio\lfs_config.json`""
         )
 
-        Write-Host $argsLichtfeldStudio
-        Sleep(1)
-
-        # Runs Lichtfeld Studio with the previously defined settings
         # Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" -ArgumentList $argsLichtfeldStudio -WorkingDirectory "C:\Users\amys2001\LichtFeld-Studio" -Wait -WindowStyle Maximized
 
-        Sleep(1)
+        # Settings for the "low quality" models
+        $argsLichtfeldStudio = @(
+            "-d `"$projectDir\alignment`"",
+            "-o `"$projectDir\3DGS_Low`"",
+            "--config=`"$PSScriptRoot\lichtfeld_studio\lfs_config_low.json`""
+        )
+
+        # Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" -ArgumentList $argsLichtfeldStudio -WorkingDirectory "C:\Users\amys2001\LichtFeld-Studio" -Wait -WindowStyle Maximized
 
         Write-Host ""
         Write-Host "3DGS Completed!"
@@ -94,14 +100,14 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         #>
 
         $modelProperties = @{
-            fieldID = "";
+            fieldID = $fieldName;
             modelHigh = "";
             modelLow = "l";
             metadata = @{
                 capturedBy = "";
                 captureDate = "";
-                framesIn = 0;
-                framesTracked = 0
+                framesIn = [System.IO.Directory]::GetFiles($projectDir+'\input\', "*.jpg").Count;
+                framesTracked = [System.IO.Directory]::GetFiles($projectDir+'\alignment\', "*.jpg").Count
             }
         }
 
@@ -112,13 +118,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         # $modelProperties.metadata.captureDate = $Folder.GetDetailsOf($File, 12)  # Reads photo metadata to determine capture date
         # $modelProperties.metadata.capturedBy = $Folder.GetDetailsOf($File, 20)   # Reads photo metadata to determine who captured the model
 
-        $modelProperties.metadata.framesIn = [System.IO.Directory]::GetFiles($projectDir+'\input\', "*.jpg").Count
-        $modelProperties.metadata.framesTracked = [System.IO.Directory]::GetFiles($projectDir+'\alignment\', "*.jpg").Count
-
-        Write-Host($modelProperties.metadata.framesIn)
-        Write-Host($modelProperties.metadata.framesTracked)
-
-        $modelProperties | ConvertTo-JSON | Out-File $projectDir'\output.json'
+        $modelProperties | ConvertTo-JSON | Out-File $projectDir'\modelData.json'
 
         Sleep(5)
 
