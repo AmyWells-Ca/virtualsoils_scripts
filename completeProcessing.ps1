@@ -1,7 +1,6 @@
 # Variables for Functionality
 $projectDir = 
 $launchDir = 
-$ver = "Res_V1"
 $no = @("n","N","no","No","NO")
 $yes = @("y","Y","yes","Yes","YES")
 
@@ -81,10 +80,6 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
 
         # Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" -ArgumentList $argsLichtfeldStudio -WorkingDirectory "C:\Users\amys2001\LichtFeld-Studio" -Wait -WindowStyle Maximized
 
-        Write-Host ""
-        Write-Host "3DGS Completed!"
-        Write-Host ""
-
         <#
         Write-Host "Editing 3DGS"
         Write-Host ""
@@ -99,26 +94,48 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         splat-transform $lowPly --filter-sphere "0,0,0,255" $fieldName"_WebLow.sog"
         #>
 
+        #
+        # Metadata Companion File
+        #
+                
         $modelProperties = @{
             fieldID = $fieldName;
-            modelHigh = "";
-            modelLow = "l";
-            metadata = @{
+            name = $fieldName;
+            country = "";
+            province = "";
+            locationName = ""
+            lat = 0;
+            long = 0;
+            plyHigh = "";
+            plyLow = "";
+            sogHigh = "";
+            sogLow = "";
+            thumbHigh = "";
+            $soilData = @{
+                classification = "CSSC3";
+                order = "";
+                soilHorizons = @{
+                    h1 = "";
+                }
+            }
+            $metaData = @{
                 capturedBy = "";
                 captureDate = "";
                 framesIn = [System.IO.Directory]::GetFiles($projectDir+'\input\', "*.jpg").Count;
-                framesTracked = [System.IO.Directory]::GetFiles($projectDir+'\alignment\', "*.jpg").Count
+                framesTracked = [System.IO.Directory]::GetFiles($projectDir+'\alignment\', "*.jpg").Count;
+                softwareEditor = "";
+                softwareGeneration = "LichtFeld Studio";
             }
         }
 
-        # $Shell = New-Object -ComObject Shell.Application
-        # $Folder = $Shell.Namespace("")
-        # $File = $Folder.ParseName("")
+        $Shell = New-Object -ComObject Shell.Application
+        $Folder = $Shell.Namespace($projectDir+'\input\')
+        $File = $Folder.ParseName( (Get-ChildItem -Path $projectDir'\input\' -File | Select-Object -First 1) )
 
-        # $modelProperties.metadata.captureDate = $Folder.GetDetailsOf($File, 12)  # Reads photo metadata to determine capture date
-        # $modelProperties.metadata.capturedBy = $Folder.GetDetailsOf($File, 20)   # Reads photo metadata to determine who captured the model
+        $modelProperties.metadata.captureDate = $Folder.GetDetailsOf($File, 12)  # Reads photo metadata to determine capture date
+        $modelProperties.metadata.capturedBy = $Folder.GetDetailsOf($File, 20)   # Reads photo metadata to determine who captured the model
 
-        $modelProperties | ConvertTo-JSON | Out-File $projectDir'\modelData.json'
+        $modelProperties | ConvertTo-JSON | Out-File $projectDir'\output\modelData.json'
 
         Sleep(5)
 
