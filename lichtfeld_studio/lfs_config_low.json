@@ -101,7 +101,7 @@
         "shs_lr": 0.0020000000949949026,
         "sparsify_steps": 15000,
         "start_refine": 0,
-        "steps_scaler": 4.0,
+        "steps_scaler": 2.0,
         "stop_refine": 28500,
         "strategy": "mrnf",
         "tile_mode": 1,

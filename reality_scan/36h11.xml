@@ -1,5 +1,5 @@
 <Configuration id="{8D21413B-0848-49A9-BF6E-8EBCCA356BC7}">
-  <entry key="minMarkerMeasurements" value="0x5"/>
+  <entry key="minMarkerMeasurements" value="0x1"/>
   <entry key="generateMarkersPaperSize" value="0"/>
   <entry key="generateMarkersMarkersPerPage" value="0x4"/>
   <entry key="generateMarkersCount" value="0x4"/>
