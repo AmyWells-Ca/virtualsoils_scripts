@@ -33,12 +33,42 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         [System.IO.Directory]::CreateDirectory($projectDir+'\3DGS_Low')     # Folder for low-quality (512k splat)
         [System.IO.Directory]::CreateDirectory($projectDir+'\output')       # Folder for processed .sog files
 
-            # "-importGroundControlPoints `"$PSScriptRoot\$ver\ControlPoints.csv`" `"$PSScriptRoot\$ver\ControlPointSettings.xml`"",
-            # "-setReconstructionRegion `"$PSScriptRoot\$ver\reconstructionRegion.rsbox`"",
+        function Splat-Clean {
+            param (
+                $sourceSplat,
+                $outputName
+            )
+            Write-Host $outputName
+
+            $outputSplat = "output\"+$outputName+"\lod-meta.json"
+            $outputSog = "output\"+$fieldName+"_"+$outputName+".sog"
+            $outputVoxel = "output\"+$fieldName+"_"+$outputName+".voxel.json"
+
+            [System.IO.Directory]::CreateDirectory($projectDir+'\temp')
+
+            # Crops the scene to the center 255m
+            splat-transform $sourceSplat --filter-sphere "0,0,0,255" $projectDir\temp\lod0.ply -w
+            
+            # Outputs a simple sog file of the cropped scene
+            splat-transform $projectDir\temp\lod0.ply $outputSog
+
+            # Splat-transform based collision mesh
+            splat-transform $projectDir\temp\lod0.ply --filter-cluster $outputVoxel --voxel-floor-fill -K
+
+            # Creates LODs 1-3 for SOG streaming
+            splat-transform $projectDir\temp\lod0.ply --decimate 50% $projectDir\temp\lod1.ply -w
+            splat-transform $projectDir\temp\lod1.ply --decimate 50% $projectDir\temp\lod2.ply -w
+            splat-transform $projectDir\temp\lod2.ply --decimate 50% $projectDir\temp\lod3.ply -w
+
+            # Final streamable SOG mesh
+            splat-transform temp\lod0.ply --lod 0 temp\lod1.ply --lod 1 temp\lod2.ply --lod 2 temp\lod3.ply --lod 3 $outputSplat --filter-nan
+
+        }
+
         #
         # Colmap
         #
-        
+
         ## Settings for RealityScan
         $argsRealityScan = @(
             "-addFolder $projectDir\input\",
@@ -90,19 +120,16 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         #
 
         cd $projectDir # Sets directory to the project directory as splat-transform needs to be run in that directory.
-
-        $plyHigh = $projectDir+"\3DGS_High\splat_135000.ply"
-        $plyLow = $projectDir+"\3DGS_Low\splat_75000.ply"
         
-        splat-transform $plyHigh --filter-sphere "0,0,0,255" $fieldName"_HighQuality.ply" # Crops beyond 255m from origin
-        splat-transform $plyHigh --filter-sphere "0,0,0,255" $fieldName"_HighQuality.sog"
-        splat-transform $plyLow --filter-sphere "0,0,0,127" $fieldName"_LowQuality.ply"
-        splat-transform $plyLow --filter-sphere "0,0,0,127" $fieldName"_LowQuality.sog"
+        Write-Host "Setting 'working directory' to $projecDir for splat cleaning" -ForegroundColor Green
+                
+        Splat-Clean -sourceSplat "3DGS_High\splat_135000.ply" -outputName "high"
+        # Splat-Clean -sourceSplat "3DGS_Low\splat_75000.ply" -outputName "low"
 
         #
         # Metadata Companion File
         #
-                
+
         $modelProperties = @{
             fieldID = $fieldName;
             name = $fieldName;
@@ -122,7 +149,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
                 soilHorizons = @{
                     h1 = "";
                 }
-            }
+            };
             $metaData = @{
                 capturedBy = "";
                 captureDate = "";
@@ -130,7 +157,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
                 framesTracked = [System.IO.Directory]::GetFiles($projectDir+'\alignment\', "*.jpg").Count;
                 softwareEditor = "";
                 softwareGeneration = "LichtFeld Studio";
-            }
+            };
         }
 
         <#
@@ -143,9 +170,14 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         #>
 
         $modelProperties | ConvertTo-JSON | Out-File $projectDir'\output\modelData.json'
+
+        Sleep(30)
     }
 } else {
     Write-Host "No directory was selected."
     Sleep(3)
     Exit-PSHostProcess
 }
+
+
+Sleep(30)
