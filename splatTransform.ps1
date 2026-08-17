@@ -1,0 +1,80 @@
+# Variables for Functionality
+$projectDir = 
+$launchDir = 
+$no = @("n","N","no","No","NO")
+$yes = @("y","Y","yes","Yes","YES")
+
+Add-Type -AssemblyName System.Windows.Forms
+$folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
+$folderBrowser.Description = "Select a directory"
+$result = $folderBrowser.ShowDialog()
+
+if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+    $projectDir = $folderBrowser.SelectedPath
+    Write-Host "You selected: $projectDir" -ForegroundColor Green
+    
+    do {
+        $fieldName = Split-Path -Path $projectDir -Leaf      
+        $answ = Read-Host "Generated 3DGS from Images in '$projectDir'? Yes or No"
+    } until ($no -contains$answ -or $yes -contains$answ) 
+
+    if ($no -contains$answ) {
+        ""
+        Write-Host "Cancelled" -ForegroundColor Red
+        Sleep(3)
+        Exit-PSHostProcess
+
+    } elseif ($yes -contains$answ) {
+        Write-Host "Yay" -ForegroundColor Green
+
+        # Creates new directories if needed for 3DGS outputs
+        [System.IO.Directory]::CreateDirectory($projectDir+'\output')       # Folder for processed .sog files
+
+        function Splat-Clean {
+            param (
+                $sourceSplat,
+                $outputName
+            )
+            Write-Host $outputName
+
+            $outputSplat = "output\"+$fieldName+"\lod-meta.json"
+            $outputPly = "output\"+$fieldName+".ply"
+            $outputSog = "output\"+$fieldName+".sog"
+            $outputVoxel = "output\"+$fieldName+".voxel.json"
+
+            [System.IO.Directory]::CreateDirectory($projectDir+'\temp')
+
+            # Crops the scene to the center 255m
+            splat-transform $sourceSplat --filter-sphere "0,0,0,255" $projectDir\temp\lod0.ply -w
+            
+            # Outputs a .ply and .sog files of the cropped scene
+            splat-transform $projectDir\temp\lod0.ply $outputPly
+            splat-transform $projectDir\temp\lod0.ply $outputSog
+
+            # Splat-transform based collision mesh
+            splat-transform $projectDir\temp\lod0.ply --filter-cluster $outputVoxel --voxel-floor-fill -K
+
+            # Creates LODs 1-3 for SOG streaming
+            splat-transform $projectDir\temp\lod0.ply --decimate 50% $projectDir\temp\lod1.ply -w
+            splat-transform $projectDir\temp\lod1.ply --decimate 50% $projectDir\temp\lod2.ply -w
+            splat-transform $projectDir\temp\lod2.ply --decimate 50% $projectDir\temp\lod3.ply -w
+
+            # Final streamable SOG mesh
+            splat-transform temp\lod0.ply --lod 0 temp\lod1.ply --lod 1 temp\lod2.ply --lod 2 temp\lod3.ply --lod 3 $outputSplat --filter-nan
+
+        }
+
+        cd $projectDir # Sets directory to the project directory as splat-transform needs to be run in that directory.
+        
+        Write-Host "Setting 'working directory' to $projecDir for splat cleaning" -ForegroundColor Green
+                
+        Splat-Clean -sourceSplat "3DGS\splat_135000.ply" -outputName "high"
+    }
+} else {
+    Write-Host "No directory was selected."
+    Sleep(3)
+    Exit-PSHostProcess
+}
+
+
+Sleep(30)

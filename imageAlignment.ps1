@@ -28,10 +28,10 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         Write-Host "Yay" -ForegroundColor Green
 
         # Creates new directories if needed for the alignment outputs, and the 3DGS outputs
-        [System.IO.Directory]::CreateDirectory($projectDir+'\alignment')    # Folder for colmap aligned photos
+        [System.IO.Directory]::CreateDirectory($projectDir+'\alignment')    # Output folder for COLMAP aligned photos (undistorted) downscaled to max dimensions of 4096
 
         #
-        # Colmap
+        # RealityScan Image Alignment
         #
 
         ## Settings for RealityScan
@@ -45,20 +45,20 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
             
             "-calculatePreviewModel",
             "-calculateVertexColors",
-            "-exportRegistration `"$projectDir\alignment\$fieldName.txt`" `"$PSScriptRoot\reality_scan\Export_Colmap.xml`"",
+            "-exportRegistration `"$projectDir\alignment\$fieldName.txt`" `"$PSScriptRoot\reality_scan\Export_Colmap_V4.xml`"",
             "-exportSelectedModel $projectDir\HP_$fieldName.fbx `"$PSScriptRoot\reality_scan\Export_FBX.xml`"",
             "-save `"$projectDir\reality_scan\RS_$fieldName.rsproj`""
+            "-quit"
         )
         
         Write-Host $argsRealityScan
 
         Start-Process -FilePath "C:\Program Files\Epic Games\RealityScan_2.1\RealityScan.exe" -ArgumentList $argsRealityScan -Wait
+
+        Write-Host "Alignment completed"
     }
 } else {
     Write-Host "No directory was selected."
     Sleep(3)
     Exit-PSHostProcess
 }
-
-
-Sleep(30)
