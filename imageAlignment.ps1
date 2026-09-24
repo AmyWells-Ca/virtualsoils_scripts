@@ -29,6 +29,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
 
         # Creates new directories if needed for the alignment outputs, and the 3DGS outputs
         [System.IO.Directory]::CreateDirectory($projectDir+'\alignment')    # Output folder for COLMAP aligned photos
+        [System.IO.Directory]::CreateDirectory($projectDir+'\extra')
 
         Write-Host "Retrieving Model Data" -ForegroundColor Yellow
         $modelProperties = Get-Content -Raw -Path $projectDir'\output\model-data.json' | ConvertFrom-JSON
@@ -49,7 +50,7 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
             "-calculatePreviewModel",
             "-calculateVertexColors",
             "-exportRegistration `"$projectDir\alignment\$fieldName.txt`" `"$PSScriptRoot\reality_scan\Export_Colmap_V4.xml`"",
-            "-exportSelectedModel $projectDir\output\$fieldName.fbx `"$PSScriptRoot\reality_scan\Export_FBX.xml`"",
+            "-exportSelectedModel $projectDir\extra\$fieldName.fbx `"$PSScriptRoot\reality_scan\Export_FBX.xml`"",
             "-save `"$projectDir\reality_scan\RS_$fieldName.rsproj`""
             "-quit"
         )

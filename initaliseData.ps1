@@ -45,21 +45,33 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK)
         ""
         
         Write-Host "Location Information"
-        $country = Read-Host "Country of Capture"
-        $province = Read-Host "Province of Capture"
-        $city = Read-Host "City of Capture"
+        Write-Host "Country of Capture"
+        $country = Read-Host "[Default: Canada]"
+        if([string]::IsNullOrWhiteSpace($country)){$country = "Canada"}
+        ""
+        Write-Host "Province of Capture"
+        $province = Read-Host "Province"
+        ""
+
+        Write-Host "City of Capture"
+        $city = Read-Host "City"
+        ""
         [float]$lat = Read-Host "Latitude"
         [float]$long = Read-Host "Longitude"
+        ""
 
         Write-Host "Capture Metadata"
         Write-Host "Who captured the Virtual Soil?"
-        $capturedBy = Read-Host
+        $capturedBy = Read-Host "[Default: Amy Wells]"
+        if([string]::IsNullOrWhiteSpace($capturedBy)){$capturedBy = "Amy Wells"}
         ""
         Write-Host "When was the Virtual Soil captured?"
         $captureDate = Read-Host "YYYY-MM-DD"
         ""
         Write-Host "What software were photos edited in?"
-        $softwareEdit = Read-Host "e.g. Adobe Lightroom"
+        $softwareEdit = Read-Host "[Default: Adobe Lightroom]"
+        if([string]::IsNullOrWhiteSpace($softwareEdit)){$softwareEdit = "Adobe Lightroom"}
+
         ""
 
         $modelProperties = [ordered]@{

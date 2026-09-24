@@ -28,7 +28,8 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         Write-Host "Yay" -ForegroundColor Green
 
         # Creates new directories if needed for 3DGS outputs
-        [System.IO.Directory]::CreateDirectory($projectDir+'\output')       # Folder for processed .sog files
+        [System.IO.Directory]::CreateDirectory($projectDir+'\output')       # Folder for processed ssog files
+        [System.IO.Directory]::CreateDirectory($projectDir+'\extra') 
         
         Write-Host "Retrieving Model Data" -ForegroundColor Yellow
         $modelProperties = Get-Content -Raw -Path $projectDir'\output\model-data.json' | ConvertFrom-JSON
@@ -39,10 +40,10 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
                 $sourceSplat
             )
 
-            $outputSplat = "output\"+$fieldName+"\lod-meta.json"
-            $outputPly = "output\"+$fieldName+".ply"
-            $outputSog = "output\"+$fieldName+".sog"
-            $outputVoxel = "output\"+$fieldName+".voxel.json"
+            $outputSplat = "output\lod-meta.json"
+            $outputPly = "extra\"+$fieldName+".ply"
+            $outputSog = "extra\"+$fieldName+".sog"
+            $outputVoxel = "extra\"+$fieldName+".voxel.json"
 
             [System.IO.Directory]::CreateDirectory($projectDir+'\temp')
 
@@ -53,13 +54,13 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
             splat-transform $projectDir\temp\lod0.ply $outputPly
             splat-transform $projectDir\temp\lod0.ply $outputSog
 
-            # Splat-transform based collision mesh
-            splat-transform $projectDir\temp\lod0.ply --filter-sphere "0,0,0,63" --filter-cluster $outputVoxel --voxel-floor-fill -K
-
             # Creates LODs 1-3 for SOG streaming
             splat-transform $projectDir\temp\lod0.ply --decimate 50% $projectDir\temp\lod1.ply -w
             splat-transform $projectDir\temp\lod1.ply --decimate 50% $projectDir\temp\lod2.ply -w
             splat-transform $projectDir\temp\lod2.ply --decimate 50% $projectDir\temp\lod3.ply -w
+            
+            # Splat-transform based collision mesh
+            splat-transform $projectDir\temp\lod1.ply --filter-sphere "0,0,0,63" --filter-cluster $outputVoxel --voxel-floor-fill -K
 
             # Final streamable SOG mesh
             splat-transform temp\lod0.ply -l 0 temp\lod1.ply -l 1 temp\lod2.ply -l 2 temp\lod3.ply -l 3 $outputSplat --filter-nan
@@ -75,10 +76,14 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         ""
 
         $modelProperties.metadata.transformed = $true
-
+        
         Write-Host "Writing Model Data" -ForegroundColor Yellow
         [System.IO.Directory]::CreateDirectory($projectDir+'\output')
         $modelProperties | ConvertTo-JSON | Out-File $projectDir'\output\model-data.json'
+        
+        Write-Host "Compressing Virtual Soil Model"
+        Compress-Archive -Path $projectDir'\output\*' -DestinationPath $modelProperties.fieldID'\output.zip' -Force
+
         Exit-PSHostProcess
     }
 }
