@@ -29,33 +29,43 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
 
         # Creates new directories if needed for the 3DGS outputs
         [System.IO.Directory]::CreateDirectory($projectDir+'\3DGS')    # Folder for high-quality (4m splat)
-
-        #
-        # 3DGS
-        #
         
+        Write-Host "Retrieving Model Data" -ForegroundColor Yellow
+        $modelProperties = Get-Content -Raw -Path $projectDir'\output\model-data.json' | ConvertFrom-JSON
+        Write-Host "Model Data for $modelProperties.fieldID retrieved" -ForegroundColor Green
 
-        # Settings for the "high quality" models
-        $argsLichtfeldStudioHigh = @(
+        #
+        # Lichtfeld Studio 3DGS Generation
+        #
+        $argsLichtfeldStudio = @(
             "-d `"$projectDir\alignment`"",
             "-o `"$projectDir\3DGS`"",
             "--config=`"$PSScriptRoot\lichtfeld_studio\lfs_config.json`""
         )
+
+        
+        Write-Host "Alignment Arguments"
+        Write-Host $argsLichtfeldStudio
+
+        Write-Host "Launching Lichtfeld Studio" -ForegroundColor Yellow
         Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" -ArgumentList $argsLichtfeldStudioHigh -WorkingDirectory "C:\Users\amys2001\LichtFeld-Studio" -Wait -WindowStyle Maximized
 
-        <#
-        # Settings for the "low quality" models
-        $argsLichtfeldStudioLow = @(
-            "-d `"$projectDir\alignment`"",
-            "-o `"$projectDir\3DGS_Low`"",
-            "--config=`"$PSScriptRoot\lichtfeld_studio\lfs_config_low.json`""
-        )
-        Start-Process -FilePath "C:\Users\amys2001\LichtFeld-Studio\bin\LichtFeld-Studio.exe" -ArgumentList $argsLichtfeldStudioLow -WorkingDirectory "C:\Users\amys2001\LichtFeld-Studio" -Wait -WindowStyle Maximized
-        #>
+        Write-Host "Full Quality 3DGS Trained" -ForegroundColor Green
+        ""
+
+        $modelProperties.metadata.softwareGeneration = "Lichtfeld Studio"
+        $modelProperties.metadata.generated = $true
+
+        Write-Host "Writing Model Data" -ForegroundColor Yellow
+        [System.IO.Directory]::CreateDirectory($projectDir+'\output')
+        $modelProperties | ConvertTo-JSON | Out-File $projectDir'\output\model-data.json'
+        Exit-PSHostProcess
 
     }
-} else {
-    Write-Host "No directory was selected."
+}
+else
+{
+    Write-Host "No directory was selected." -ForegroundColor Red
     Sleep(3)
     Exit-PSHostProcess
 }

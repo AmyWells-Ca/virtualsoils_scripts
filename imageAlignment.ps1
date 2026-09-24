@@ -28,37 +28,56 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         Write-Host "Yay" -ForegroundColor Green
 
         # Creates new directories if needed for the alignment outputs, and the 3DGS outputs
-        [System.IO.Directory]::CreateDirectory($projectDir+'\alignment')    # Output folder for COLMAP aligned photos (undistorted) downscaled to max dimensions of 4096
+        [System.IO.Directory]::CreateDirectory($projectDir+'\alignment')    # Output folder for COLMAP aligned photos
+
+        Write-Host "Retrieving Model Data" -ForegroundColor Yellow
+        $modelProperties = Get-Content -Raw -Path $projectDir'\output\model-data.json' | ConvertFrom-JSON
+        Write-Host "Model Data for $modelProperties.fieldID retrieved" -ForegroundColor Green
 
         #
         # RealityScan Image Alignment
         #
-
-        ## Settings for RealityScan
         $argsRealityScan = @(
             "-addFolder $projectDir\input\",
             "-setProjectCoordinateSystem Local:1",
             "-detectMarkers `"$PSScriptRoot\reality_scan\36h11.xml`"",
-            "-defineDistance `"$PSScriptRoot\reality_scan\Constraints.csv`"",
+            "-defineDistance `"$PSScriptRoot\reality_scan\Constraints_V4.csv`"",
             "-align",
             "-selectMaximalComponent",
-            
+            "-align",
+            "-selectMaximalComponent",
             "-calculatePreviewModel",
             "-calculateVertexColors",
             "-exportRegistration `"$projectDir\alignment\$fieldName.txt`" `"$PSScriptRoot\reality_scan\Export_Colmap_V4.xml`"",
-            "-exportSelectedModel $projectDir\HP_$fieldName.fbx `"$PSScriptRoot\reality_scan\Export_FBX.xml`"",
+            "-exportSelectedModel $projectDir\output\$fieldName.fbx `"$PSScriptRoot\reality_scan\Export_FBX.xml`"",
             "-save `"$projectDir\reality_scan\RS_$fieldName.rsproj`""
             "-quit"
         )
         
-        Write-Host $argsRealityScan
+        Write-Host "Alignment Arguments"
+        Write-Host $argsRealityScan -ForegroundColor Cyan
 
+        Write-Host "Launching RealityScan" -ForegroundColor Yellow
         Start-Process -FilePath "C:\Program Files\Epic Games\RealityScan_2.1\RealityScan.exe" -ArgumentList $argsRealityScan -Wait
 
-        Write-Host "Alignment completed"
+        Write-Host "Alignment Commpleted" -ForegroundColor Green
+        ""
+
+        $modelProperties.metadata.softwareAlignment = "Reality Scan"
+        $modelProperties.framesTracked = [System.IO.Directory]::GetFiles($projectDir+'\alignment\images\').Count
+        $model
+        $modelProperties.metadata.framesIn = [System.IO.Directory]::GetFiles($projectDir+'\input\').Count
+        $modelProperties.metadata.aligned = $true
+
+        Write-Host "Writing Model Data" -ForegroundColor Yellow
+        [System.IO.Directory]::CreateDirectory($projectDir+'\output')
+        $modelProperties | ConvertTo-JSON | Out-File $projectDir'\output\model-data.json'
+        Exit-PSHostProcess
     }
-} else {
-    Write-Host "No directory was selected."
+}
+else
+{
+    Write-Host "No directory was selected." -ForegroundColor Red
     Sleep(3)
     Exit-PSHostProcess
 }
